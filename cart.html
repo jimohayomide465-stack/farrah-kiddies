@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Cart | Farrah Kiddies</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .cart-page {
+            padding: 50px 0 80px;
+        }
+        .cart-page h1 {
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+        .cart-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        .cart-table th {
+            background: #fdf2f8;
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .cart-table td {
+            padding: 16px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+        .cart-product {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .cart-product img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .qty-controls button {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .cart-summary {
+            margin-top: 30px;
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            max-width: 400px;
+            margin-left: auto;
+        }
+        .cart-summary div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .cart-summary .total {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #db2777;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 15px;
+            margin-top: 10px;
+        }
+        .btn-checkout-full {
+            width: 100%;
+              /* max-width:350px; */
+            background: #db2777;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .btn-whatsapp-full {
+            width: 100%;
+            max-width:370px;
+            background: #25d366;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            font-size: 1.05rem;
+        }
+        .empty-cart-page {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        @media (max-width: 900px) {
+            .cart-table thead {
+                display: none;
+            }
+            .cart-table tr {
+                display: block;
+                margin-bottom: 20px;
+                border: 1px solid #f1f5f9;
+                border-radius: 12px;
+                padding: 15px;
+            }
+            .cart-table td {
+                display: flex;
+                justify-content: space-between;
+                border: none;
+                padding: 8px 0;
+            }
+            .cart-table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: #64748b;
+            }
+             .btn-whatsapp-full {
+            width: 100%;
+            max-width:300px;
+        }
+      }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <span class="logo-text">Farrah <span>Kiddies</span></span>
+            </a>
+            <a href="index.html" style="color:#db2777; font-weight:500;">← Continue Shopping</a>
+        </div>
+    </header>
+
+    <section class="cart-page">
+        <div class="container">
+            <h1>Your Cart</h1>
+
+            <div id="cartContent">
+                <!-- Cart items will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <script>
+        let cart = JSON.parse(localStorage.getItem('farrahCart')) || [];
+
+        function renderCartPage() {
+            const container = document.getElementById('cartContent');
+
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-cart-page">
+                        <h2>Your cart is empty</h2>
+                        <p style="margin: 15px 0;">Looks like you haven't added anything yet.</p>
+                        <a href="index.html" style="color: #db2777; font-weight: 500;">← Continue Shopping</a>
+                    </div>
+                `;
+                return;
+            }
+
+            let total = 0;
+
+            let html = `
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Subtotal</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            cart.forEach((item, index) => {
+                const subtotal = item.price * item.quantity;
+                total += subtotal;
+
+                html += `
+                    <tr>
+                        <td data-label="Product">
+                            <div class="cart-product">
+                                <img src="${item.img}" alt="${item.name}">
+                                <span>${item.name}</span>
+                            </div>
+                        </td>
+                        <td data-label="Price">₦${item.price.toLocaleString()}</td>
+                        <td data-label="Quantity">
+                            <div class="qty-controls">
+                                <button onclick="changeQty(${index}, -1)">-</button>
+                                <span>${item.quantity}</span>
+                                <button onclick="changeQty(${index}, 1)">+</button>
+                            </div>
+                        </td>
+                        <td data-label="Subtotal">₦${subtotal.toLocaleString()}</td>
+                        <td data-label="">
+                            <button onclick="removeItem(${index})" style="background:none; border:none; color:#ef4444; cursor:pointer;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+
+                <div class="cart-summary">
+                    <div>
+                        <span>Subtotal</span>
+                        <span>₦${total.toLocaleString()}</span>
+                    </div>
+                    <div class="total">
+                        <span>Total</span>
+                        <span>₦${total.toLocaleString()}</span>
+                    </div>
+                    <button class="btn-checkout-full" onclick="alert('Checkout feature coming from main page')">Proceed to Checkout</button>
+                    <a href="#" class="btn-whatsapp-full" id="whatsappCartBtn">
+                        <i class="fab fa-whatsapp"></i> Order via WhatsApp
+                    </a>
+                </div>
+            `;
+
+            container.innerHTML = html;
+
+            // WhatsApp button
+            document.getElementById('whatsappCartBtn').onclick = function(e) {
+                e.preventDefault();
+                const phoneNumber = "2348012345678"; // Change to your number
+                let message = `Hello Farrah Kiddies! 👋%0A%0AI would like to order:%0A%0A`;
+                cart.forEach(item => {
+                    message += `• ${item.name} × ${item.quantity} = ₦${(item.price * item.quantity).toLocaleString()}%0A`;
+                });
+                message += `%0A*Total: ₦${total.toLocaleString()}*%0A%0APlease confirm. Thank you!`;
+                window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+            };
+        }
+
+        function changeQty(index, change) {
+            cart[index].quantity += change;
+            if (cart[index].quantity < 1) {
+                cart.splice(index, 1);
+            }
+            localStorage.setItem('farrahCart', JSON.stringify(cart));
+            renderCartPage();
+        }
+
+        function removeItem(index) {
+            cart.splice(index, 1);
+            localStorage.setItem('farrahCart', JSON.stringify(cart));
+            renderCartPage();
+        }
+
+        renderCartPage();
+    </script>
+</body>
+</html>

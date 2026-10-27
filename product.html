@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         .product-detail {
-            padding: 60px 0;
+            padding: 50px 0 80px;
         }
         .product-detail-container {
             display: grid;
@@ -19,22 +19,41 @@
         }
         .product-detail-image img {
             width: 100%;
-            border-radius: 16px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+            border-radius: 18px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
         }
         .product-detail-info h1 {
-            font-size: 2rem;
-            margin-bottom: 12px;
+            font-family:'poppins';
+            font-size: 1.9rem;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+        .product-meta {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .product-meta span {
+             font-family:'poppins';
+            background: #fce7f3;
+            color: #db2777;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
         }
         .product-detail-info .price {
-            font-size: 1.6rem;
+             font-family:'poppins';
+            font-size: 1.7rem;
             font-weight: 700;
             color: #db2777;
-            margin: 15px 0;
+            margin: 12px 0;
         }
         .product-detail-info .stock {
-            margin-bottom: 20px;
             font-weight: 500;
+            margin-bottom: 20px;
+             font-family:'poppins';
         }
         .quantity-selector {
             display: flex;
@@ -43,19 +62,21 @@
             margin: 25px 0;
         }
         .quantity-selector button {
-            width: 40px;
-            height: 40px;
-            border: 1px solid #ddd;
+            width: 42px;
+            height: 42px;
+            border: 1px solid #e5e7eb;
             background: white;
             font-size: 1.2rem;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
+             font-family:'poppins';
         }
         .quantity-selector span {
             font-size: 1.2rem;
             font-weight: 600;
             min-width: 30px;
             text-align: center;
+             font-family:'poppins';
         }
         .btn-add-detail {
             background: #db2777;
@@ -69,13 +90,24 @@
             display: inline-flex;
             align-items: center;
             gap: 10px;
+            transition: 0.3s;
+             font-family:'poppins';
         }
         .btn-add-detail:hover {
             background: #be185d;
+            transform: translateY(-2px);
         }
         .btn-add-detail:disabled {
             background: #9ca3af;
             cursor: not-allowed;
+            transform: none;
+        }
+        .product-description {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid #f1f5f9;
+            color: #4b5563;
+            line-height: 1.7;
         }
         @media (max-width: 768px) {
             .product-detail-container {
@@ -87,7 +119,6 @@
 </head>
 <body>
 
-    <!-- Simple Header -->
     <header class="header">
         <div class="container">
             <a href="index.html" class="logo">
@@ -100,23 +131,25 @@
     <section class="product-detail">
         <div class="container">
             <div class="product-detail-container" id="productDetail">
-                <!-- Product details will be loaded here by JavaScript -->
                 <p>Loading product...</p>
+            </div>
+        </div>
+
+        <!-- Related Products -->
+         <div id="relatedProducts" style="margin-top:60px; display:none;">
+            <h2 style="margin-bottom:25px; font-size:1.5rem;">You may also like</h2>
+            <div class="products-grid" id="relatedGrid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
             </div>
         </div>
     </section>
 
-   <!-- <script src="js/script.js"></script> -->
-<script>
-    // Get product ID from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const productId = urlParams.get('id');
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
 
-    function loadProductDetail() {
-        try {
+        function loadProductDetail() {
             const products = JSON.parse(localStorage.getItem('farrahProducts')) || [];
             const product = products.find(p => String(p.id) === String(productId));
-
             const container = document.getElementById('productDetail');
 
             if (!product) {
@@ -124,7 +157,7 @@
                     <div style="grid-column: 1 / -1; text-align: center; padding: 60px 0;">
                         <h2>Product not found</h2>
                         <p style="margin: 15px 0;">This product may have been removed.</p>
-                        <a href="index.html" style="color: #db2777; font-weight: 500;">← Back to Shop</a>
+                        <a href="index.html" style="color: #db2777;">← Back to Shop</a>
                     </div>
                 `;
                 return;
@@ -145,8 +178,15 @@
                 </div>
                 <div class="product-detail-info">
                     <h1>${product.name}</h1>
+                    
+                    <div class="product-meta">
+                        ${product.category ? `<span>${product.category}</span>` : ''}
+                        ${product.badge ? `<span>${product.badge}</span>` : ''}
+                    </div>
+
                     <div class="price">₦${Number(product.price).toLocaleString()}</div>
-                    <div class="stock" style="color: ${stock <= 5 ? '#dc2626' : '#16a34a'}; font-weight: 500; margin-bottom: 20px;">
+                    
+                    <div class="stock" style="color: ${stock <= 5 ? '#dc2626' : '#16a34a'}">
                         ${stock > 0 ? `In Stock: ${stock}` : 'Out of Stock'}
                     </div>
 
@@ -160,14 +200,19 @@
                         <i class="fas fa-shopping-cart"></i>
                         ${stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                     </button>
+
+                    <div class="product-description">
+                        <h3 style="margin-bottom: 10px;">Product Description</h3>
+                        <p>This is a high-quality product from Farrah Kiddies. Perfect for your little ones. Soft, comfortable, and stylish.</p>
+                    </div>
                 </div>
             `;
 
-            // Quantity controls
+            // Quantity logic
             let quantity = 1;
             const qtyValue = document.getElementById('qtyValue');
 
-            document.getElementById('increaseQty').onclick = function() {
+            document.getElementById('increaseQty').onclick = () => {
                 if (quantity < stock) {
                     quantity++;
                     qtyValue.textContent = quantity;
@@ -176,7 +221,7 @@
                 }
             };
 
-            document.getElementById('decreaseQty').onclick = function() {
+            document.getElementById('decreaseQty').onclick = () => {
                 if (quantity > 1) {
                     quantity--;
                     qtyValue.textContent = quantity;
@@ -184,7 +229,7 @@
             };
 
             // Add to Cart
-            document.getElementById('addToCartDetail').onclick = function() {
+            document.getElementById('addToCartDetail').onclick = () => {
                 if (stock <= 0) return;
 
                 let cart = JSON.parse(localStorage.getItem('farrahCart')) || [];
@@ -210,20 +255,43 @@
                 alert(`${product.name} added to cart!`);
             };
 
-        } catch (error) {
-            console.error(error);
-            document.getElementById('productDetail').innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-                    <h2>Something went wrong</h2>
-                    <a href="index.html">← Back to Shop</a>
-                </div>
-            `;
-        }
-    }
+            const relatedContainer =document.getElementById('relatedProducts');
+              const relatedGrid =document.getElementById('relatedGrid');
 
-    // Load product when page is ready
-    loadProductDetail();
-</script>
+              const related = products
+              .filter(p => p.id !== product.id && p.category === product.category)
+              .slice(0, 4);
+
+              if (related.length > 0) {
+                relatedContainer.style.display = 'block';
+                relatedGrid.innerHTML= '';
+
+                related.forEach(item => {
+                    const stock = Number(item.stock) || 0;
+                    relatedGrid.innerHTML+= ` 
+                    
+                    <div class ="product-card">
+                        <dic class="product-img">
+                            <a href="product.html?id=${item.id}">
+                                <img src="${item.image}" alt="${item.name}">
+                                </a>
+                                </div>
+                        
+                        <div class="product-info">
+                            <h3>${item.name}</h3>
+                            <div class="price">₦${Number(item.price).toLocaleString()}</div>
+                            <a href="product.html?id=${item.id}"  class="add-to-cart" style="text-align:center; display:block; text-decoration:none;">
+                                View Product
+                                </a>
+                                </div>
+                                </div>
+                    
+                    `;
+                });
+              }
+        }
+
+        loadProductDetail();
+    </script>
 </body>
 </html>
-
