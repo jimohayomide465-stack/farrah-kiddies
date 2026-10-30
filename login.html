@@ -103,6 +103,66 @@
             font-size:0.9rem;
           }
 
+          /* ===== PAGE LOADER ===== */
+.page-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fdf2f8; /* soft pink background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
+}
+
+.page-loader.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loader-content img {
+    text-align: center;
+     width:50px;
+  height:50px;
+  border-radius:50%;
+  /* background: #e91e8c; */
+}
+
+.loader-logo img {
+     width:50px;
+  height:50px;
+  border-radius:50%;
+  /* background: #e91e8c; */
+    /* font-size: 1.8rem;
+    font-weight: 700;
+    color: #831843;
+    margin-bottom: 25px;
+    letter-spacing: -0.5px; */
+}
+
+.loader-logo span {
+    color: #db2777;
+}
+
+.loader-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #fbcfe8;
+    border-top: 4px solid #db2777;
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
       </style>
 <body>
 
@@ -128,6 +188,13 @@
       <a href ="index.html" class="back-link">🔙Back to Website</a>
     </div>
     
+    <!-- Page Loading Spinner -->
+<div id="pageLoader" class="page-loader">
+    <div class="loader-content">
+        <div class="loader-logo"><img src="images/logo.jpeg" alt="logo"></div>
+        <div class="loader-spinner"></div>
+    </div>
+</div>
     <script>
       // simple admin credentials
       const ADMIN_USERNAME ="admin";
@@ -148,7 +215,28 @@
           document.getElementById ('errorMsg').style.display = 'block';
         }
       });
+ 
+      // Page Loader
+const pageLoader = document.getElementById('pageLoader');
 
+// Show loader when clicking internal links
+document.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+
+        // Only show loader for internal page links
+        if (href && !href.startsWith('#') && !href.startsWith('http') && !href.startsWith('mailto') && !href.startsWith('tel')) {
+            pageLoader.classList.add('active');
+        }
+    });
+});
+
+// Hide loader when page is fully loaded
+window.addEventListener('load', () => {
+    setTimeout(() => {
+ pageLoader.classList.remove('active');
+    }, 300);
+});
       </script>
 
     </body>

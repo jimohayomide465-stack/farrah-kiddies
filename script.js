@@ -85,25 +85,23 @@ document.querySelectorAll('.add-to-cart').forEach(button => {
     });
 
 
-// ========== UPDATE CART UI ==========
+// ========== UPDATE CART ==========
 function updateCart() {
-    // Clear current items
+    if (!cartItemsContainer) return;
+
     cartItemsContainer.innerHTML = '';
 
-
-
     if (cart.length === 0) {
-        cartItemsContainer.innerHTML = '<p class="empty-cart">Your cart is empty</p>';
+        cartItemsContainer.innerHTML = `<p class="empty-cart">Your cart is empty</p>`;
     } else {
         cart.forEach(item => {
-            const itemTotal = item.price * item.quantity;
-
             const cartItemHTML = `
-                <div class="cart-item" data-id="${item.id}">
+                <div class="cart-item" data-id="${item.cartId || item.id}">
                     <img src="${item.img}" alt="${item.name}">
                     <div class="cart-item-info">
                         <h4>${item.name}</h4>
-                        <p class="cart-price">₦${item.price.toLocaleString()}</p>
+                        ${item.size ? `<p style="font-size: 0.85rem; color: #db2777; margin: 2px 0;">Size: ${item.size}</p>` : ''}
+                        <p class="cart-price">₦${Number(item.price).toLocaleString()}</p>
                         <div class="quantity">
                             <button class="qty-btn decrease">-</button>
                             <span>${item.quantity}</span>
@@ -121,18 +119,20 @@ function updateCart() {
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    cartCount.textContent = totalItems;
-    cartItemCount.textContent = `(${totalItems})`;
-    cartSubtotal.textContent = `₦${totalPrice.toLocaleString()}`;
+    if (cartCount) {
+        cartCount.textContent = totalItems;
+        cartCount.style.display = totalItems > 0 ? 'flex' : 'none';
+    }
 
-    if (totalItems === 0) {
-       cartCount.style.display = 'none';
+    if (cartItemCount) {
+        cartItemCount.textContent = `(${totalItems})`;
     }
-    else {
- cartCount.style.display = 'flex';
+
+    if (cartSubtotal) {
+        cartSubtotal.textContent = `₦${totalPrice.toLocaleString()}`;
     }
-updateCartCountOnly();
-    // Add event listeners for + - and remove
+
+    updateBottomCartCount(totalItems);
     addCartEventListeners();
     saveCart();
 }
@@ -143,17 +143,26 @@ function addCartEventListeners() {
     document.querySelectorAll('.increase').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = e.target.closest('.cart-item').dataset.id;
-            const item = cart.find(i => i.id === id);
+            const item = cart.find(i => (i.cartId || i.id) === id);
 
-            //  FIND THE PRODUCT STOCK
-            const productCard = document.querySelector(`.product-card[data-id="${id}"]`);
-            const stock = productCard ? parseInt(productCard.dataset.stock) : 999;
+            if (!item) return;
+
+            // Get stock
+            let stock = 999;
+            const productCard = document.querySelector(`.product-card[data-id="${item.id}"]`);
+            
+            if (productCard) {
+                stock = parseInt(productCard.dataset.stock) || 999;
+            } else {
+                const products = JSON.parse(localStorage.getItem('farrahProducts')) || [];
+                const product = products.find(p => p.id === item.id);
+                if (product) stock = Number(product.stock) || 999;
+            }
 
             if (item.quantity + 1 > stock) {
                 alert(`Only ${stock} item(s) available in stock!`);
                 return;
             }
-
 
             item.quantity++;
             updateCart();
@@ -164,13 +173,16 @@ function addCartEventListeners() {
     document.querySelectorAll('.decrease').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = e.target.closest('.cart-item').dataset.id;
-            const item = cart.find(i => i.id === id);
-            
-            if (item.quantity > 1) {
-                item.quantity--;
+            const itemIndex = cart.findIndex(i => (i.cartId || i.id) === id);
+
+            if (itemIndex === -1) return;
+
+            if (cart[itemIndex].quantity > 1) {
+                cart[itemIndex].quantity--;
             } else {
-                cart = cart.filter(i => i.id !== id);
+                cart.splice(itemIndex, 1);
             }
+
             updateCart();
         });
     });
@@ -179,10 +191,24 @@ function addCartEventListeners() {
     document.querySelectorAll('.remove-item').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = e.target.closest('.cart-item').dataset.id;
-            cart = cart.filter(i => i.id !== id);
+            cart = cart.filter(i => (i.cartId || i.id) !== id);
             updateCart();
         });
     });
+}
+
+// ========== BOTTOM CART COUNT ==========
+function updateBottomCartCount(totalItems) {
+    const bottomCount = document.querySelector('.bottom-cart-count');
+    if (bottomCount) {
+        bottomCount.textContent = totalItems;
+        bottomCount.style.display = totalItems > 0 ? 'flex' : 'none';
+    }
+}
+
+// ========== SAVE CART ==========
+function saveCart() {
+    localStorage.setItem('farrahCart', JSON.stringify(cart));
 }
 
 // ========== WISHLIST FUNCTIONALITY ==========
@@ -512,6 +538,67 @@ window.addEventListener('scroll', () => {
     });
 });
 
+// ========== MOBILE SEARCH ==========
+const mobileSearch = document.getElementById('mobileSearch');
+const mobileSearchOverlay = document.getElementById('mobileSearchOverlay');
+const mobileSearchInput = document.getElementById('mobileSearchInput');
+const mobileSearchResults = document.getElementById('mobileSearchResults');
+
+// Open mobile search
+document.getElementById('bottom-search')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    mobileSearch.classList.add('active');
+    mobileSearchOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    setTimeout(() => {
+        mobileSearchInput.focus();
+    }, 300);
+});
+
+// Close mobile search
+function closeMobileSearch() {
+    mobileSearch.classList.remove('active');
+    mobileSearchOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+    mobileSearchInput.value = '';
+    mobileSearchResults.innerHTML = `<p class="search-hint">Start typing to search products</p>`;
+}
+
+document.getElementById('closeMobileSearch')?.addEventListener('click', closeMobileSearch);
+mobileSearchOverlay?.addEventListener('click', closeMobileSearch);
+
+// Search functionality
+mobileSearchInput?.addEventListener('input', () => {
+    const searchTerm = mobileSearchInput.value.toLowerCase().trim();
+    const products = JSON.parse(localStorage.getItem('farrahProducts')) || [];
+
+    if (searchTerm === '') {
+        mobileSearchResults.innerHTML = `<p class="search-hint">Start typing to search products</p>`;
+        return;
+    }
+
+    const results = products.filter(product => 
+        product.name.toLowerCase().includes(searchTerm) ||
+        (product.category && product.category.toLowerCase().includes(searchTerm))
+    );
+
+    if (results.length === 0) {
+        mobileSearchResults.innerHTML = `<p class="search-hint">No products found</p>`;
+        return;
+    }
+
+    mobileSearchResults.innerHTML = results.map(product => `
+        <a href="product.html?id=${product.id}" class="mobile-search-item">
+            <img src="${product.image}" alt="${product.name}">
+            <div>
+                <h4>${product.name}</h4>
+                <p>₦${Number(product.price).toLocaleString()}</p>
+            </div>
+        </a>
+    `).join('');
+});
+
 // ========== CONTACT FORM ==========
 document.getElementById('contactForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
@@ -525,8 +612,21 @@ document.getElementById('contactForm')?.addEventListener('submit', function(e) {
 document.getElementById('bottom-wishlist')?.addEventListener('click', () => {
     document.getElementById('open-wishlist').click();
 
+    });
+
+    document.getElementById('bottom-search')?.addEventListener('click', (e) => {
+
+    document.querySelector('#shop')?.scrollinView({behavior: 'smooth'});
+
+    const searchInput=document.querySelector('.search-box input');
+    if(searchInput) {
+        setTimeout(() => {
+            searchInput.focus();
+        }, 400);
+    }
+    });
     
-});
+
 
 // Open cart from bottom nav
 document.getElementById('bottom-cart')?.addEventListener('click', () => {
@@ -553,6 +653,7 @@ function updateCartCountOnly() {
 
    
 }
+
 
 document.querySelectorAll('.bottom-nav a').forEach(link => {
     link.addEventListener('click', (e) => {
@@ -587,7 +688,7 @@ function updateBottomNav() {
                 // Match the correct bottom nav item
                 if (
                     (id === 'home' && item.querySelector('.fa-home')) ||
-                    (id === 'shop' && item.querySelector('.fa-shopping-bag')) ||
+                    (id === '' && item.querySelector('.fa-search')) ||
                     (id === '' && item.querySelector('.fa-user'))
                 ) {
                     item.classList.add('active');
@@ -604,76 +705,228 @@ updateBottomNav(); // run once on load
 
 function loadDynamicProducts() {
     const savedProducts = JSON.parse(localStorage.getItem('farrahProducts')) || [];
-    const productsGrid = document.querySelector('.products-grid');
+    const productsGrid = document.getElementById('productsGrid') || document.querySelector('.products-grid');
+    const loadingSpinner = document.getElementById('loadingSpinner');
 
-    // If no products have been added from admin, keep the original ones
+    if (!productsGrid) return;
+
+    // Hide loading spinner
+    if (loadingSpinner) {
+        loadingSpinner.remove();
+    }
+
+      productsGrid.innerHTML = '';
+
+
     if (savedProducts.length === 0) {
+        productsGrid.innerHTML = `
+            <p style="grid-column: 1 / -1; text-align: center; padding: 50px; color: #64748b;">
+                No products available yet.
+            </p>
+            `;
         return;
     }
 
-    // Clear the current products
-    productsGrid.innerHTML = '';
+    // Clear current products
+    // savedProducts.forEach(product => {
 
-    // Create product cards from localStorage
+    // });
+  
+    // Create product cards
     savedProducts.forEach(product => {
         let badgeHTML = '';
-        if (product.badge === 'new') {
-            badgeHTML = `<span class="badge new">New</span>`;
-        } else if (product.badge === 'bestseller') {
-            badgeHTML = `<span class="badge bestseller">Best Seller</span>`;
-        } else if (product.badge === 'sale') {
-            badgeHTML = `<span class="badge sale">Sale</span>`;
-        }
+        if (product.badge === 'new') badgeHTML = `<span class="badge new">New</span>`;
+        else if (product.badge === 'bestseller') badgeHTML = `<span class="badge bestseller">Best Seller</span>`;
+        else if (product.badge === 'sale') badgeHTML = `<span class="badge sale">Sale</span>`;
 
-       const productHTML = `
-   
-    <div class="product-card" 
-         data-id="${product.id}" 
-         data-name="${product.name}" 
-         data-price="${product.price}" 
-         data-img="${product.image}"
-         data-stock="${product.stock}"
-         data-category="${product.category || ''}">
-         
-        <div class="product-img">
-            ${badgeHTML}
-            <button class="wishlist"><i class="far fa-heart"></i></button>
-            <a href="product.html?id=${product.id}">
-            <img src="${product.image}" alt="${product.name}">
-            </a>
-        </div>
-        
-        <div class="product-info">
-            <h3>${product.name}</h3>
-            <div class="rating">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star-half-alt"></i>
-                <span>(4.8)</span>
+        const stock = Number(product.stock) || 0;
+
+        const productHTML = `
+            <div class="product-card" 
+                 data-id="${product.id}" 
+                 data-name="${product.name}" 
+                 data-price="${product.price}" 
+                 data-img="${product.image}"
+                 data-stock="${stock}"
+                 data-category="${product.category || ''}">
+                 
+                <div class="product-img">
+                    ${badgeHTML}
+                    <button class="wishlist"><i class="far fa-heart"></i></button>
+                    <a href="product.html?id=${product.id}">
+                        <img src="${product.image}" alt="${product.name}">
+                    </a>
+                </div>
+                
+                <div class="product-info">
+                    <h3>${product.name}</h3>
+                    <div class="rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                        <span>(4.8)</span>
+                    </div>
+                    <div class="price">₦${Number(product.price).toLocaleString()}</div>
+                    <p class="stock-info" style="font-size: 0.85rem; margin: 6px 0 10px; color: ${stock <= 5 ? '#dc2626' : '#16a34a'};">
+                        ${stock > 0 ? `In Stock: ${stock}` : 'Out of Stock'}
+                    </p>
+                    <button class="add-to-cart" ${stock <= 0 ? 'disabled' : ''}>
+                        <i class="fas fa-shopping-cart"></i> 
+                        ${stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                    </button>
+                </div>
             </div>
-            <div class="price">₦${Number(product.price).toLocaleString()}</div>
-            
-            <p class="stock-info" style="font-size: 0.85rem; margin: 6px 0 10px; color: ${product.stock <= 5 ? '#dc2626' : '#16a34a'};">
-                ${product.stock > 0 ? `In Stock: ${product.stock}` : 'Out of Stock'}
-            </p>
-
-            <button class="add-to-cart" ${product.stock <= 0 ? 'disabled' : ''}>
-                <i class="fas fa-shopping-cart"></i> 
-                ${product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
-            </button>
-        </div>
-    </div>
-`;
-
+        `;
 
         productsGrid.insertAdjacentHTML('beforeend', productHTML);
     });
 
-    // Re-attach Add to Cart and Wishlist events for the new products
+    // Re-attach events
     attachProductEvents();
 }
+
+// Page Loader
+const pageLoader = document.getElementById('pageLoader');
+
+// Show loader when clicking internal links
+document.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+
+        // Only show loader for internal page links
+        if (href && !href.startsWith('#') && !href.startsWith('http') && !href.startsWith('mailto') && !href.startsWith('tel')) {
+            pageLoader.classList.add('active');
+        }
+    });
+});
+
+// Hide loader when page is fully loaded
+window.addEventListener('load', () => {
+    setTimeout(() => {
+ pageLoader.classList.remove('active');
+    }, 300);
+   
+});
+
+// ========== DESKTOP LIVE SEARCH ==========
+const desktopSearchInput = document.getElementById('desktopSearchInput') || document.querySelector('.search-box input');
+const desktopSearchResults = document.getElementById('desktopSearchResults');
+
+desktopSearchInput?.addEventListener('input', () => {
+    const searchTerm = desktopSearchInput.value.toLowerCase().trim();
+    const products = JSON.parse(localStorage.getItem('farrahProducts')) || [];
+
+    if (searchTerm === '') {
+        desktopSearchResults.classList.remove('active');
+        desktopSearchResults.innerHTML = '';
+        return;
+    }
+
+    const results = products.filter(product => 
+        product.name.toLowerCase().includes(searchTerm) ||
+        (product.category && product.category.toLowerCase().includes(searchTerm))
+    );
+
+    if (results.length === 0) {
+        desktopSearchResults.innerHTML = `<div class="no-result">No products found</div>`;
+        desktopSearchResults.classList.add('active');
+        return;
+    }
+
+    desktopSearchResults.innerHTML = results.slice(0, 6).map(product => `
+        <a href="product.html?id=${product.id}" class="desktop-search-item">
+            <img src="${product.image}" alt="${product.name}">
+            <div>
+                <h4>${product.name}</h4>
+                <p>₦${Number(product.price).toLocaleString()}</p>
+            </div>
+        </a>
+    `).join('');
+
+    desktopSearchResults.classList.add('active');
+});
+
+// Close search results when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-box')) {
+        desktopSearchResults?.classList.remove('active');
+    }
+});
+
+// function loadDynamicProducts() {
+//     const savedProducts = JSON.parse(localStorage.getItem('farrahProducts')) || [];
+//     const productsGrid = document.querySelector('.products-grid');
+
+    // If no products have been added from admin, keep the original ones
+    // if (savedProducts.length === 0) {
+    //     return;
+    // }
+
+    // Clear the current products
+    // productsGrid.innerHTML = '';
+
+    // Create product cards from localStorage
+//     savedProducts.forEach(product => {
+//         let badgeHTML = '';
+//         if (product.badge === 'new') {
+//             badgeHTML = `<span class="badge new">New</span>`;
+//         } else if (product.badge === 'bestseller') {
+//             badgeHTML = `<span class="badge bestseller">Best Seller</span>`;
+//         } else if (product.badge === 'sale') {
+//             badgeHTML = `<span class="badge sale">Sale</span>`;
+//         }
+
+//        const productHTML = `
+   
+//     <div class="product-card" 
+//          data-id="${product.id}" 
+//          data-name="${product.name}" 
+//          data-price="${product.price}" 
+//          data-img="${product.image}"
+//          data-stock="${product.stock}"
+//          data-category="${product.category || ''}">
+         
+//         <div class="product-img">
+//             ${badgeHTML}
+//             <button class="wishlist"><i class="far fa-heart"></i></button>
+//             <a href="product.html?id=${product.id}">
+//             <img src="${product.image}" alt="${product.name}">
+//             </a>
+//         </div>
+        
+//         <div class="product-info">
+//             <h3>${product.name}</h3>
+//             <div class="rating">
+//                 <i class="fas fa-star"></i>
+//                 <i class="fas fa-star"></i>
+//                 <i class="fas fa-star"></i>
+//                 <i class="fas fa-star"></i>
+//                 <i class="fas fa-star-half-alt"></i>
+//                 <span>(4.8)</span>
+//             </div>
+//             <div class="price">₦${Number(product.price).toLocaleString()}</div>
+            
+//             <p class="stock-info" style="font-size: 0.85rem; margin: 6px 0 10px; color: ${product.stock <= 5 ? '#dc2626' : '#16a34a'};">
+//                 ${product.stock > 0 ? `In Stock: ${product.stock}` : 'Out of Stock'}
+//             </p>
+
+//             <button class="add-to-cart" ${product.stock <= 0 ? 'disabled' : ''}>
+//                 <i class="fas fa-shopping-cart"></i> 
+//                 ${product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+//             </button>
+//         </div>
+//     </div>
+// `;
+
+
+//         productsGrid.insertAdjacentHTML('beforeend', productHTML);
+//     });
+
+//     // Re-attach Add to Cart and Wishlist events for the new products
+//     attachProductEvents();
+// }
 
 // Re-attach events after loading dynamic products
 function attachProductEvents() {

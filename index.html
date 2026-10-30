@@ -44,7 +44,8 @@
         <div class="header-right">
             <div class="search-box">
                 <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search for products...">
+                <input type="text"id="desktopSearchInput" placeholder="Search for products...">
+                <div class="desktop-search-results" id="desktopSearchResults"></div>
             </div>
 
           <button class="icon-btn" id="open-wishlist">
@@ -196,96 +197,14 @@
 </div>
          
      <!-- Products Grid -->
-          <div class="products-grid">
-
-    <!-- Product 1 -->
-    <div class="product-card" data-id="1" data-name="Kids Denim Set" data-price="25000" data-img="https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=400">
-        <div class="product-img">
-            <span class="badge new">New</span>
-            <button class="wishlist"><i class="far fa-heart"></i></button>
-            <img src="https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=400" alt="Kids Denim Set">
-        </div>
-        <div class="product-info">
-            <h3>Kids Denim Set</h3>
-            <div class="rating">
-                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                <i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                <span>(4.8)</span>
-            </div>
-            <div class="price">₦25,000</div>
-            <button class="add-to-cart">
-                <i class="fas fa-shopping-cart"></i> Add to Cart
-            </button>
-        </div>
+         <div class="products-grid" id="productsGrid">
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner"></div>
+        <p>Loading products...</p>
     </div>
-
-    <!-- Product 2 -->
-    <div class="product-card" data-id="2" data-name="Pink Princess Dress" data-price="22000" data-img="images/princess-dress.jpg">
-        <div class="product-img">
-            <span class="badge bestseller">Best Seller</span>
-            <button class="wishlist"><i class="far fa-heart"></i></button>
-            <img src="images/princess-dress.jpg" alt="Pink Princess Dress">
-        </div>
-        <div class="product-info">
-            <h3>Pink Princess Dress</h3>
-            <div class="rating">
-                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                <i class="fas fa-star"></i><i class="fas fa-star"></i>
-                <span>(4.9)</span>
-            </div>
-            <div class="price">₦22,000</div>
-            <button class="add-to-cart">
-                <i class="fas fa-shopping-cart"></i> Add to Cart
-            </button>
-        </div>
-    </div>
-
-    <!-- Product 3 -->
-    <div class="product-card" data-id="3" data-name="Kids Sneakers" data-price="18000" data-img="images/sneakers.jpg">
-        <div class="product-img">
-            <span class="badge sale">Sale</span>
-            <button class="wishlist"><i class="far fa-heart"></i></button>
-            <img src="images/sneakers.jpg" alt="Kids Sneakers">
-        </div>
-        <div class="product-info">
-            <h3>Kids Sneakers</h3>
-            <div class="rating">
-                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                <i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                <span>(4.7)</span>
-            </div>
-            <div class="price">
-                ₦18,000
-                <span class="old-price">₦22,000</span>
-                <span class="discount">-18%</span>
-            </div>
-            <button class="add-to-cart">
-                <i class="fas fa-shopping-cart"></i> Add to Cart
-            </button>
-        </div>
-    </div>
-
-    <!-- Product 4 -->
-    <div class="product-card" data-id="4" data-name="Dinosaur Kids Bag" data-price="15000" data-img="https://images.unsplash.com/photo-1588072432836-e10032774350?w=400">
-        <div class="product-img">
-            <button class="wishlist"><i class="far fa-heart"></i></button>
-            <img src="https://images.unsplash.com/photo-1588072432836-e10032774350?w=400" alt="Dinosaur Kids Bag">
-        </div>
-        <div class="product-info">
-            <h3>Dinosaur Kids Bag</h3>
-            <div class="rating">
-                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                <i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                <span>(4.6)</span>
-            </div>
-            <div class="price">₦15,000</div>
-            <button class="add-to-cart">
-                <i class="fas fa-shopping-cart"></i> Add to Cart
-            </button>
-        </div>
-    </div>
-
 </div>
+    <!-- Product 1 -->
+    <!-- < -->
 </section>
 
 
@@ -569,10 +488,14 @@
         <i class="fas fa-home"></i>
         <span>Home</span>
     </a>
-    <a href="#shop" class="bottom-nav-item">
+      <a href="#" class="bottom-nav-item" id="bottom-search">
+                <i class="fas fa-search"></i>
+              <span>Search</span>
+      </a>
+    <!-- <a href="#shop" class="bottom-nav-item">
         <i class="fas fa-shopping-bag"></i>
         <span>Shop</span>
-    </a>
+    </a> -->
     <button class="bottom-nav-item" id="bottom-wishlist">
         <i class="far fa-heart"></i>
         <span class="bottom-wishlist">Wishlist</span>
@@ -628,8 +551,31 @@
 
 <div id ="toast" class="toast"></div>
 
+<!-- Page Loading Spinner -->
+<div id="pageLoader" class="page-loader">
+    <div class="loader-content">
+        <div class="loader-logo"><img src="images/logo.jpeg" alt="logo"></div>
+        <div class="loader-spinner"></div>
+    </div>
+</div>
+
+<!-- Mobile Search Popup -->
+<div class="mobile-search-overlay" id="mobileSearchOverlay"></div>
+
+<div class="mobile-search" id="mobileSearch">
+    <div class="mobile-search-header">
+        <input type="text" id="mobileSearchInput" placeholder="Search products...">
+        <button id="closeMobileSearch">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="mobile-search-results" id="mobileSearchResults">
+        <p class="search-hint">Start typing to search products</p>
+    </div>
+</div>
     <!-- Link to our JavaScript -->
     <script src="script.js"></script>
+
     
 </body>
 </html>

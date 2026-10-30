@@ -115,6 +115,91 @@
                 gap: 30px;
             }
         }
+
+        /* ===== PAGE LOADER ===== */
+.page-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fdf2f8; /* soft pink background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
+}
+
+.page-loader.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loader-content img {
+    text-align: center;
+     width:50px;
+  height:50px;
+  border-radius:50%;
+  /* background: #e91e8c; */
+}
+
+.loader-logo img {
+     width:50px;
+  height:50px;
+  border-radius:50%;
+  /* background: #e91e8c; */
+    /* font-size: 1.8rem;
+    font-weight: 700;
+    color: #831843;
+    margin-bottom: 25px;
+    letter-spacing: -0.5px; */
+}
+
+.loader-logo span {
+    color: #db2777;
+}
+
+.loader-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #fbcfe8;
+    border-top: 4px solid #db2777;
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.size-options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.size-btn {
+    padding: 8px 16px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+.size-btn:hover,
+.size-btn.active {
+    border-color: #db2777;
+    background: #fdf2f8;
+    color: #db2777;
+}  
+
     </style>
 </head>
 <body>
@@ -142,154 +227,218 @@
             </div>
         </div>
     </section>
-
+<!-- Page Loading Spinner -->
+<div id="pageLoader" class="page-loader">
+    <div class="loader-content">
+        <div class="loader-logo"><img src="images/logo.jpeg" alt="logo"></div>
+        <div class="loader-spinner"></div>
+    </div>
+</div>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const productId = urlParams.get('id');
+        const productId = urlParams.get('id');''
+        
+function loadProductDetail() {
+    const products = JSON.parse(localStorage.getItem('farrahProducts')) || [];
+    const product = products.find(p => String(p.id) === String(productId));
+    const container = document.getElementById('productDetail');
 
-        function loadProductDetail() {
-            const products = JSON.parse(localStorage.getItem('farrahProducts')) || [];
-            const product = products.find(p => String(p.id) === String(productId));
-            const container = document.getElementById('productDetail');
+    if (!product) {
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 0;">
+                <h2>Product not found</h2>
+                <p style="margin: 15px 0;">This product may have been removed.</p>
+                <a href="index.html" style="color: #db2777;">← Back to Shop</a>
+            </div>
+        `;
+        return;
+    }
 
-            if (!product) {
-                container.innerHTML = `
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 60px 0;">
-                        <h2>Product not found</h2>
-                        <p style="margin: 15px 0;">This product may have been removed.</p>
-                        <a href="index.html" style="color: #db2777;">← Back to Shop</a>
-                    </div>
-                `;
+    // Save to recently viewed
+    let recent = JSON.parse(localStorage.getItem('recentlyViewed')) || [];
+    recent = recent.filter(id => id !== product.id);
+    recent.unshift(product.id);
+    if (recent.length > 6) recent = recent.slice(0, 6);
+    localStorage.setItem('recentlyViewed', JSON.stringify(recent));
+
+    const stock = Number(product.stock) || 0;
+
+    // Create the HTML first
+    container.innerHTML = `
+        <div class="product-detail-image">
+            <img src="${product.image}" alt="${product.name}">
+        </div>
+        <div class="product-detail-info">
+            <h1>${product.name}</h1>
+            
+            <div class="product-meta">
+                ${product.category ? `<span>${product.category}</span>` : ''}
+                ${product.badge ? `<span>${product.badge}</span>` : ''}
+            </div>
+
+            <div class="price">₦${Number(product.price).toLocaleString()}</div>
+            
+            <div class="stock" style="color: ${stock <= 5 ? '#dc2626' : '#16a34a'}">
+                ${stock > 0 ? `In Stock: ${stock}` : 'Out of Stock'}
+            </div>
+
+            <div class="size-selector" id="sizeSelector" style="margin: 20px 0; display: none;">
+                <p style="font-weight: 500; margin-bottom: 10px;">Select Size:</p>
+                <div class="size-options" id="sizeOptions"></div>
+            </div>
+
+            <div class="quantity-selector">
+                <button type="button" id="decreaseQty">-</button>
+                <span id="qtyValue">1</span>
+                <button type="button" id="increaseQty">+</button>
+            </div>
+
+            <button class="btn-add-detail" id="addToCartDetail" ${stock <= 0 ? 'disabled' : ''}>
+                <i class="fas fa-shopping-cart"></i>
+                ${stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+            </button>
+
+            <div class="product-description">
+                <h3 style="margin-bottom: 10px;">Product Description</h3>
+                <p>${product.description || ' '}</p>
+            </div>
+        </div>
+    `;
+
+    // Now handle sizes (after HTML is created)
+    if (product.sizes) {
+        const sizeSelector = document.getElementById('sizeSelector');
+        const sizeOptions = document.getElementById('sizeOptions');
+        const sizes = product.sizes.split(',').map(s => s.trim());
+
+        sizeSelector.style.display = 'block';
+        sizeOptions.innerHTML = '';
+
+        sizes.forEach((size, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'size-btn' + (index === 0 ? ' active' : '');
+            btn.textContent = size;
+            btn.onclick = function() {
+                document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            };
+            sizeOptions.appendChild(btn);
+        });
+    }
+
+    // Quantity logic
+    let quantity = 1;
+    const qtyValue = document.getElementById('qtyValue');
+
+    document.getElementById('increaseQty').onclick = () => {
+        if (quantity < stock) {
+            quantity++;
+            qtyValue.textContent = quantity;
+        } else {
+            alert(`Only ${stock} available in stock!`);
+        }
+    };
+
+    document.getElementById('decreaseQty').onclick = () => {
+        if (quantity > 1) {
+            quantity--;
+            qtyValue.textContent = quantity;
+        }
+    };
+
+    // Add to Cart with Size
+    document.getElementById('addToCartDetail').onclick = () => {
+        if (stock <= 0) return;
+
+        const selectedSizeBtn = document.querySelector('.size-btn.active');
+        const selectedSize = selectedSizeBtn ? selectedSizeBtn.textContent : null;
+
+        if (product.sizes && !selectedSize) {
+            alert('Please select a size');
+            return;
+        }
+
+        let cart = JSON.parse(localStorage.getItem('farrahCart')) || [];
+        const cartItemId = selectedSize ? `${product.id}-${selectedSize}` : product.id;
+
+        const existing = cart.find(item => item.cartId === cartItemId);
+
+        if (existing) {
+            if (existing.quantity + quantity > stock) {
+                alert(`Only ${stock} items available!`);
                 return;
             }
+            existing.quantity += quantity;
+        } else {
+            cart.push({
+                cartId: cartItemId,
+                id: product.id,
+                name: selectedSize ? `${product.name} (${selectedSize})` : product.name,
+                price: Number(product.price),
+                img: product.image,
+                quantity: quantity,
+                size: selectedSize || ''
+            });
+        }
 
-            // Save to recently viewed
-            let recent = JSON.parse(localStorage.getItem('recentlyViewed')) || [];
-            recent = recent.filter(id => id !== product.id);
-            recent.unshift(product.id);
-            if (recent.length > 6) recent = recent.slice(0, 6);
-            localStorage.setItem('recentlyViewed', JSON.stringify(recent));
+        localStorage.setItem('farrahCart', JSON.stringify(cart));
+        alert(`${product.name}${selectedSize ? ' - Size ' + selectedSize : ''} added to cart!`);
+    };
 
-            const stock = Number(product.stock) || 0;
+    // Related Products
+    const relatedContainer = document.getElementById('relatedProducts');
+    const relatedGrid = document.getElementById('relatedGrid');
 
-            container.innerHTML = `
-                <div class="product-detail-image">
-                    <img src="${product.image}" alt="${product.name}">
-                </div>
-                <div class="product-detail-info">
-                    <h1>${product.name}</h1>
-                    
-                    <div class="product-meta">
-                        ${product.category ? `<span>${product.category}</span>` : ''}
-                        ${product.badge ? `<span>${product.badge}</span>` : ''}
+    const related = products
+        .filter(p => p.id !== product.id && p.category === product.category)
+        .slice(0, 4);
+
+    if (related.length > 0) {
+        relatedContainer.style.display = 'block';
+        relatedGrid.innerHTML = '';
+
+        related.forEach(item => {
+            relatedGrid.innerHTML += `
+                <div class="product-card">
+                    <div class="product-img">
+                        <a href="product.html?id=${item.id}">
+                            <img src="${item.image}" alt="${item.name}">
+                        </a>
                     </div>
-
-                    <div class="price">₦${Number(product.price).toLocaleString()}</div>
-                    
-                    <div class="stock" style="color: ${stock <= 5 ? '#dc2626' : '#16a34a'}">
-                        ${stock > 0 ? `In Stock: ${stock}` : 'Out of Stock'}
-                    </div>
-
-                    <div class="quantity-selector">
-                        <button type="button" id="decreaseQty">-</button>
-                        <span id="qtyValue">1</span>
-                        <button type="button" id="increaseQty">+</button>
-                    </div>
-
-                    <button class="btn-add-detail" id="addToCartDetail" ${stock <= 0 ? 'disabled' : ''}>
-                        <i class="fas fa-shopping-cart"></i>
-                        ${stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
-                    </button>
-
-                    <div class="product-description">
-                        <h3 style="margin-bottom: 10px;">Product Description</h3>
-                        <p>This is a high-quality product from Farrah Kiddies. Perfect for your little ones. Soft, comfortable, and stylish.</p>
+                    <div class="product-info">
+                        <h3>${item.name}</h3>
+                        <div class="price">₦${Number(item.price).toLocaleString()}</div>
+                        <a href="product.html?id=${item.id}" class="add-to-cart" style="text-align:center; display:block; text-decoration:none;">
+                            View Product
+                        </a>
                     </div>
                 </div>
             `;
+        });
+    }
+} 
+        // Page Loader
+const pageLoader = document.getElementById('pageLoader');
 
-            // Quantity logic
-            let quantity = 1;
-            const qtyValue = document.getElementById('qtyValue');
+// Show loader when clicking internal links
+document.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
 
-            document.getElementById('increaseQty').onclick = () => {
-                if (quantity < stock) {
-                    quantity++;
-                    qtyValue.textContent = quantity;
-                } else {
-                    alert(`Only ${stock} available in stock!`);
-                }
-            };
-
-            document.getElementById('decreaseQty').onclick = () => {
-                if (quantity > 1) {
-                    quantity--;
-                    qtyValue.textContent = quantity;
-                }
-            };
-
-            // Add to Cart
-            document.getElementById('addToCartDetail').onclick = () => {
-                if (stock <= 0) return;
-
-                let cart = JSON.parse(localStorage.getItem('farrahCart')) || [];
-                const existing = cart.find(item => item.id === product.id);
-
-                if (existing) {
-                    if (existing.quantity + quantity > stock) {
-                        alert(`Only ${stock} items available!`);
-                        return;
-                    }
-                    existing.quantity += quantity;
-                } else {
-                    cart.push({
-                        id: product.id,
-                        name: product.name,
-                        price: Number(product.price),
-                        img: product.image,
-                        quantity: quantity
-                    });
-                }
-
-                localStorage.setItem('farrahCart', JSON.stringify(cart));
-                alert(`${product.name} added to cart!`);
-            };
-
-            const relatedContainer =document.getElementById('relatedProducts');
-              const relatedGrid =document.getElementById('relatedGrid');
-
-              const related = products
-              .filter(p => p.id !== product.id && p.category === product.category)
-              .slice(0, 4);
-
-              if (related.length > 0) {
-                relatedContainer.style.display = 'block';
-                relatedGrid.innerHTML= '';
-
-                related.forEach(item => {
-                    const stock = Number(item.stock) || 0;
-                    relatedGrid.innerHTML+= ` 
-                    
-                    <div class ="product-card">
-                        <dic class="product-img">
-                            <a href="product.html?id=${item.id}">
-                                <img src="${item.image}" alt="${item.name}">
-                                </a>
-                                </div>
-                        
-                        <div class="product-info">
-                            <h3>${item.name}</h3>
-                            <div class="price">₦${Number(item.price).toLocaleString()}</div>
-                            <a href="product.html?id=${item.id}"  class="add-to-cart" style="text-align:center; display:block; text-decoration:none;">
-                                View Product
-                                </a>
-                                </div>
-                                </div>
-                    
-                    `;
-                });
-              }
+        // Only show loader for internal page links
+        if (href && !href.startsWith('#') && !href.startsWith('http') && !href.startsWith('mailto') && !href.startsWith('tel')) {
+            pageLoader.classList.add('active');
         }
+    });
+});
+
+// Hide loader when page is fully loaded
+window.addEventListener('load', () => {
+    setTimeout(() => {
+ pageLoader.classList.remove('active');
+    }, 300);
+   
+});
 
         loadProductDetail();
     </script>
